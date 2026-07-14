@@ -2,14 +2,14 @@
 
 # Simple Web scraper made in Bash.
 # Version: 1.2
-# Author: Wein Vade
+# Author: vaiop10
 # License: MIT
 # This script comes with no warranty.
 
 
   SCRIPT_NAME="web-scraper"
   SCRIPT_VERSION="1.2"
-  AUTHOR="Wein Vade"
+  AUTHOR="vaiop10"
   LICENSE="MIT"
   LOG_FILE="/var/log/web-scraper.log"
   ERROR_LOG_FILE="/var/log/web-scrapper-error.log"
