@@ -1,0 +1,147 @@
+#!/usr/bin/env bash
+
+
+
+
+  SCRIPT_NAME="web-scraper"
+  SCRIPT_VERSION="1.2"
+  AUTHOR="Wein Vade"
+  LICENSE="MIT"
+  LOG_FILE="/var/log/web-scraper.log"
+  ERROR_LOG_FILE="/var/log/web-scrapper-error.log"
+
+  RED='\033[0;31m'
+  YELLOW='\033[0;33m'
+  BLUE='\033[0;34m'
+  NC='\033[0m'
+
+  FLAG=$1
+  TARGET=$2
+  VERBOSE=0
+
+
+
+permissions_check() {
+[[ $EUID -ne 0 ]] && { printf "${RED}[!] you need root permissions.${NC}\n"; exit 1; }
+}
+
+
+log() {
+local OUTPUT="$1"
+    while IFS= read -r line; do
+     printf '%s - %s\n' "$(date '+%Y-%m-%d %H:%M:%S')" "$line"
+   done <<< "$OUTPUT" | tee -a "$LOG_FILE"
+ }
+
+error_log() {
+local OUTPUT="$1"
+    printf "${RED}$(date '+%Y-%m-%d %H:%M:%S') - $OUTPUT Check -> $ERROR_LOG_FILE${NC}\n" | tee -a "$ERROR_LOG_FILE"
+}
+
+print_log() {
+printf "${BLUE} Check -> $LOG_FILE${NC}\n"
+}
+
+flag_check() {
+ [[ -z $FLAG ]] && { printf "${YELLOW}Usage: $0 <option> <target>${NC}\n"; exit 2; }
+ [[  $FLAG =~ ^(-c|-i|-e|-p|-full|-h)$ ]] || { printf "${RED}[!] Invalid option. Check -> [ -h ]${NC}\n"; exit 1; }
+ [[ $FLAG == "-h" ]] && banner
+}
+
+target_check() {
+
+[[ ! $TARGET =~ ^(https?://)?([a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}(/.*)?$ ]] && { printf "${YELLOW}Example: sudo ./webscraper -e https://example.com${NC}\n"; exit 0; }
+
+local HOST=$(printf "$TARGET\n" | sed -E 's#https?://##' | cut -d/ -f1)
+host $HOST >/dev/null 2>&1 || { error_log "[!] $TARGET is not up for scraping."; exit 1; }
+}
+
+
+
+banner() {
+clear
+echo
+printf "${BLUE}======================================\n${NC}"
+printf "          $SCRIPT_NAME v$SCRIPT_VERSION          \n "
+printf "           License:$LICENSE                      \n "
+printf "${YELLOW}        Author:$AUTHOR             ${NC}\n "
+printf "                                                 \n "
+printf "${BLUE}Options:                             ${NC}\n "
+printf "${YELLOW}       $: -e -> email scraping.    ${NC}\n "
+printf "${YELLOW}       $: -p -> phone scraping.    ${NC}\n "
+printf "${YELLOW}       $: -c -> cookie scraping.   ${NC}\n "
+printf "${YELLOW}       $: -i -> id scraping.       ${NC}\n "
+printf "${YELLOW}       $: -full -> all in one.     ${NC}\n "
+printf "                                                 \n "
+printf "                                                 \n "
+printf "${BLUE}======================================\n${NC}"
+
+}
+
+
+email_scrap() {
+
+printf "${YELLOW}[*] Email scraping started..${NC}\n"
+local OUTPUT=$(curl -s $TARGET | grep -Eio '[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}' 2> /dev/null || { error_log "[!] Error while searching for emails."; exit 1; } )
+log "$OUTPUT"
+print_log
+
+}
+
+
+phone_scrap() {
+
+printf "${YELLOW}[*] Phone scraping started..${NC}\n"
+local OUTPUT=$(curl -s https://example.com | grep -Eo '\+?[0-9][0-9() .-]{7,}[0-9]' 2> /dev/null || { error_log "[!] Error while searching for phone numbers."; exit 1; } )
+log "$OUTPUT"
+print_log
+}
+
+
+id_scrap() {
+
+printf "${YELLOW}[*] Id scraping started..${NC}\n"
+local OUTPUT=$(curl -s "$TARGET" | grep -oP '<\K\w+[^>]*id="[^"]+"' | sed -E 's/.*?([a-zA-Z0-9-]+)[^>]*id="([^"]+)".*/\1 -> \2/' || { error_log "[!] Error while searching for IDS."; exit 1; } )
+log "$OUTPUT"
+print_log
+}
+
+cookies_scrap() {
+
+printf "${YELLOW}[*] Cookie scraping started..${NC}\n"
+local OUTPUT=$(curl -v "$TARGET" >/dev/null | grep -i set-cookie | awk '{ print $1 }' || { error_log "[!] Error while searching for Cookies."; exit 1; } )
+log "$OUTPUT"
+print_log
+}
+
+full_scan() {
+
+phone_scrap
+email_scrap
+id_scrap
+cookies_scrap
+}
+
+
+permissions_check
+flag_check
+target_check
+
+case $FLAG in
+
+      -p)
+         phone_scrap
+          ;;
+      -e)
+        email_scrap
+         ;;
+     -c)
+        cookie_scrap
+         ;;
+     -i)
+        id_scrap
+         ;;
+  -full)
+        full_scan
+         ;;
+esac
