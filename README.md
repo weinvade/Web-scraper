@@ -27,7 +27,7 @@ A simple Bash script for scraping publicly available email addresses and phone n
 Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/web-scraper.git
+git clone https://github.com/vaiop10/web-scraper.git
 cd web-scraper
 ```
 
@@ -101,4 +101,4 @@ MIT License
 
 ## Author
 
-Wein Vade
+Vaiop10
